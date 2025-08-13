@@ -1,49 +1,45 @@
-name: Build wkhtmltopdf static
+name: Build wkhtmltopdf Static Binary
 
 on:
   workflow_dispatch:  # 手动触发
-    inputs:
-      version:
-        description: 'wkhtmltopdf version tag'
-        default: '0.12.6'
-        required: true
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        arch: [x86_64, arm64]
+
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Set up QEMU for ARM
-        if: matrix.arch == 'arm64'
-        uses: docker/setup-qemu-action@v2
-        with:
-          platforms: arm64
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+    - name: Cache Docker layers
+      uses: actions/cache@v3
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-buildx-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-buildx-
 
-      - name: Build Docker image for static build
-        run: |
-          docker build \
-            --build-arg ARCH=${{ matrix.arch }} \
-            -t wkhtmltopdf-builder:${{ matrix.arch }} \
-            -f Dockerfile .
+    - name: Build Docker image
+      run: |
+        docker build -t wkhtmltopdf-static .
 
-      - name: Run build in Docker
-        run: |
-          mkdir -p output
-          docker run --rm \
-            -v ${{ github.workspace }}/output:/output \
-            wkhtmltopdf-builder:${{ matrix.arch }} \
-            /bin/bash -c "cd /wkhtmltopdf-master && ./build.py --static && cp bin/wkhtmltopdf /output/wkhtmltopdf-${{ matrix.arch }}"
+    - name: Run Docker container and extract binary
+      run: |
+        docker create --name wkhtmltopdf-container wkhtmltopdf-static
+        docker cp wkhtmltopdf-container:/usr/local/bin/wkhtmltopdf ./wkhtmltopdf
+        docker rm wkhtmltopdf-container
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: wkhtmltopdf-${{ matrix.arch }}
-          path: output/wkhtmltopdf-${{ matrix.arch }}
+    - name: Upload wkhtmltopdf binary
+      uses: actions/upload-artifact@v3
+      with:
+        name: wkhtmltopdf
+        path: ./wkhtmltopdf
