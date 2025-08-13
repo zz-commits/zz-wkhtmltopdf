@@ -5,7 +5,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
     apt-get install -y \
-      build-essential git python3 python3-pip qt5-default \
+      build-essential git python3 python3-pip \
+      qtbase5-dev qtchooser \
       libx11-dev libxext-dev libxrender-dev libfontconfig1-dev \
       cmake pkg-config wget xz-utils bzip2 sudo && \
     rm -rf /var/lib/apt/lists/*
