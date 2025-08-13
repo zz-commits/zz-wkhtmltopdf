@@ -37,7 +37,7 @@ jobs:
           docker run --rm \
             -v ${{ github.workspace }}/output:/output \
             wkhtmltopdf-builder:${{ matrix.arch }} \
-            /bin/bash -c "cd /wkhtmltopdf && ./build.py --static && cp bin/wkhtmltopdf /output/wkhtmltopdf-${{ matrix.arch }}"
+            /bin/bash -c "cd /wkhtmltopdf-master && ./build.py --static && cp bin/wkhtmltopdf /output/wkhtmltopdf-${{ matrix.arch }}"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
