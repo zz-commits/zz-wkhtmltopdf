@@ -1,0 +1,46 @@
+name: Build wkhtmltopdf static
+
+on:
+  push:
+    tags:
+      - '0.12.6'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [x86_64, arm64]
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU for ARM
+        if: matrix.arch == 'arm64'
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker image for static build
+        run: |
+          docker build \
+            --build-arg ARCH=${{ matrix.arch }} \
+            -t wkhtmltopdf-builder:${{ matrix.arch }} \
+            -f Dockerfile .
+
+      - name: Run build in Docker
+        run: |
+          mkdir -p output
+          docker run --rm \
+            -v ${{ github.workspace }}/output:/output \
+            wkhtmltopdf-builder:${{ matrix.arch }} \
+            /bin/bash -c "cd /wkhtmltopdf && ./build.py --static && cp bin/wkhtmltopdf /output/wkhtmltopdf-${{ matrix.arch }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: wkhtmltopdf-${{ matrix.arch }}
+          path: output/wkhtmltopdf-${{ matrix.arch }}
