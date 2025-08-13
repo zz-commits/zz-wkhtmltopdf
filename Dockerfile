@@ -12,9 +12,9 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # 设置工作目录
-WORKDIR /wkhtmltopdf
+WORKDIR /wkhtmltopdf-master
 
 # 拷贝源代码（GitHub Actions 会挂载源码）
-COPY . .
+COPY ./wkhtmltopdf-master
 
 # 构建脚本可在容器内执行 ./build.py --static
